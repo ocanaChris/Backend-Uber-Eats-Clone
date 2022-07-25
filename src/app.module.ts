@@ -78,15 +78,10 @@ import { UploadsModule } from './uploads/uploads.module';*/
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
        driver: ApolloDriver,
-      playground: process.env.NODE_ENV !== 'production',
-      installSubscriptionHandlers: true,
+      //playground: process.env.NODE_ENV !== 'production',
+      //installSubscriptionHandlers: true,
       autoSchemaFile: true,
-      context: ({ req, connection }) => {
-        const TOKEN_KEY = 'x-jwt';
-        return {
-          token: req ? req.headers[TOKEN_KEY] : connection.context[TOKEN_KEY],
-        };
-      },
+      context: ({ req }) => ({ user: req['user'] }),
     }),
   //  ScheduleModule.forRoot(),
    JwtModule.forRoot({
@@ -111,7 +106,7 @@ import { UploadsModule } from './uploads/uploads.module';*/
 export class AppModule implements NestModule  {
  
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(JwtMiddleware).forRoutes({ path: "/graphql", method : RequestMethod.ALL });
+    consumer.apply(JwtMiddleware).forRoutes({ path: "/graphql", method : RequestMethod.POST });
   }
 
   
