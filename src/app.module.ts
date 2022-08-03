@@ -28,6 +28,7 @@ import { Payment } from './payments/entities/payment.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UploadsModule } from './uploads/uploads.module';*/
 import { AuthModule } from './auth/auth.module';
+import { Verification } from './users/entities/verification.entity';
 
 @Module({
   imports: [
@@ -66,8 +67,7 @@ import { AuthModule } from './auth/auth.module';
       synchronize: process.env.NODE_ENV !== 'prod',
       logging:
         process.env.NODE_ENV !== 'prod' && process.env.NODE_ENV !== 'test',
-      entities: [
-        User,
+      entities: [User, Verification] 
     /*    Verification,
         Restaurant,
         Category,
@@ -75,7 +75,7 @@ import { AuthModule } from './auth/auth.module';
         Order,
         OrderItem,
         Payment,*/
-      ],
+      
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
        driver: ApolloDriver,

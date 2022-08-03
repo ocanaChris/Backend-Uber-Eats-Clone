@@ -10,11 +10,15 @@ import { User } from './entities/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from 'src/jwt/jwt.service';
 import { Injectable } from '@nestjs/common';
+import { EditProfileInput } from './dtos/edit-profile.dto';
+import { Verification } from './entities/verification.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(Verification) 
+    private readonly verifications:  Repository<Verification>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -22,17 +26,26 @@ export class UsersService {
     email,
     password,
     role,
-  }: CreateAccountInput): Promise<[boolean, string?]> {
+  }: CreateAccountInput): Promise<{ok: boolean; error?: string }> {
     //check new user
     //create new user & hash
     try {
-      const exists = await this.users.findOne({ where: { email } });
+      const exists = await this.users.findOne({ where : { email } });
       if (exists) {
-        return [false, 'There is a user with that email already'];
+        return { ok: false, error: 'There is a user with that email already' };
       }
-      await this.users.save(this.users.create({ email, password, role }));
+      const user = await this.users.save(
+        this.users.create({ email, password, role }),
+      );
+      const verification = await this.verifications.save(
+        this.verifications.create({
+          user,
+        }),
+      );
+    //  this.mailService.sendVerificationEmail(user.email, verification.code);
+      return { ok: true };
     } catch (e) {
-      return [true, 'Couldnt create account'];
+      return { ok: false, error: "Couldn't create account" };
     }
   }
 
@@ -70,7 +83,24 @@ export class UsersService {
 
   async findById( id: number ) : Promise<User>
   {
-    return this.users.findOne({ where: { id } });
+    return this.users.findOne({ where : { id } });
 
+  }
+
+  async editProfile(
+   userId : number, 
+    { email, password }: EditProfileInput,
+    ) : Promise<User>
+    {
+    const user =  await this.users.findOne({ where: { id : userId } });
+      if (email){
+        user.email = email;
+        user.verified = false;
+        await this.verifications.save(this.verifications.create({ user }));
+      }
+      if (password) {
+        user.password = password;
+      }
+    return this.users.save(user);
   }
 }

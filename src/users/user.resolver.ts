@@ -8,34 +8,20 @@ import { LoginInput, LoginOutput } from './dtos/login.dto';
 import { User } from './entities/user.entity';
 import { UsersService } from './user.service';
 import { UseGuards } from '@nestjs/common';
+import { AuthUser } from 'src/auth/auth.decorator';
+import { UserProfileInput, UserProfileOutput } from './dtos/user-profile.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 
 @Resolver((of) => User)
 export class UsersResolver {
   constructor(private readonly userService: UsersService) {}
 
-  @Query((returns) => Boolean)
-  hi() {
-    return true;
-  }
-
   @Mutation((returns) => CreateAccountOutput)
   async createAccount(
     @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutput> {
-    try {
-      const [ok, error] = await this.userService.createAccount(
-        createAccountInput,
-      );
-      return {
-        ok,
-        error,
-      };
-    } catch (error) {
-      return {
-        error: error,
-        ok: false,
-      };
-    }
+ 
+    return this.userService.createAccount(createAccountInput);
   }
 
   @Mutation((returns) => LoginOutput)
@@ -53,13 +39,58 @@ export class UsersResolver {
 
   @Query((returns) => User)
   @UseGuards(AuthGuard)
-  me(
-    @Context() context
-  ) {
-   if (!context.user) {
-    return;
-   }else {
-    return context.user;
+  me(@AuthUser() authUser: User){
+      return authUser;
+  }
+
+
+  
+  @UseGuards(AuthGuard)
+  @Query((returns) => UserProfileOutput)
+  async userProfile(@Args() userProfileInput: UserProfileInput,
+  ): Promise<UserProfileOutput> { 
+
+
+    try { 
+    const user = await this.userService.findById(userProfileInput.userId);
+   if (!user)  {
+   throw Error();
    }
+    return {
+      ok: true,
+      user,
+     };
+
+  } catch(e) {
+
+    return {
+      error: 'User not found',
+      ok: false, 
+    };
+  }
+
+}
+
+
+
+@UseGuards(AuthGuard)
+@Mutation(returns => EditProfileOutput)
+async editProfile(
+  @AuthUser() authUser: User, 
+  @Args('input') editProfileInput: EditProfileInput,
+): Promise<EditProfileOutput> {
+  try {
+    console.log(editProfileInput)
+    await this.userService.editProfile(authUser.id, editProfileInput);
+    return {
+      ok: true,
+      
+    }
+  } catch (error) {
+  return {
+    ok: false,
+    error,
+  };
+}
   }
 }
